@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Image Converter & Watermark</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+      }
+
+      h1 {
+        margin-top: 20px;
+      }
+
+      .upload-zone {
+        border: 2px dashed #aaa;
+        border-radius: 10px;
+        width: 80%;
+        margin: 0 auto 20px;
+        padding: 30px;
+        background: #fff;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .upload-zone.dragover {
+        background: #e0f7fa;
+        border-color: #00bcd4;
+      }
+
+      .conversion-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .conversion-controls select,
+      .conversion-controls button,
+      .conversion-controls input {
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+      .conversion-controls button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      #fileList {
+        display: none;
+        margin-top: 20px;
+      }
+
+      .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin: 10px auto;
+        width: 80%;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        gap: 10px;
+      }
+      .file-info {
+        flex: 1;
+        text-align: left;
+      }
+      progress {
+        width: 100%;
+        margin-top: 5px;
+      }
+
+      #controls {
+        margin: 20px 0;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #noWatermarkBtn {
+        background-color: #d3d3d3;
+        color: rgb(0, 0, 0);
+      }
+      #clearAllBtn {
+        background-color: #f44336;
+        color: white;
+      }
+      #downloadAllBtn {
+        background-color: #ffeb3b;
+        color: black;
+      }
+      .waiting-btn {
+        background-color: orange !important;
+        cursor: not-allowed !important;
+      }
+      .download-btn {
+        background-color: green !important;
+        color: white !important;
+      }
+      .size-decrease {
+        color: green;
+        font-weight: bold;
+      }
+      .size-increase {
+        color: red;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Image Converter & Watermark</h1>
+
+    <div class="upload-zone" id="uploadZone">
+      Drag & Drop Images Here or Click to Upload
+    </div>
+    <input type="file" id="fileInput" style="display: none" multiple />
+
+    <div class="conversion-controls">
+      <label>
+        Convert To:
+        <select id="convertTo">
+          <option value="webp" selected>WEBP</option>
+          <option value="png">PNG</option>
+          <option value="jpg">JPG</option>
+        </select>
+      </label>
+      <input type="text" id="watermarkText" placeholder="Watermark text..." />
+      <button id="convertAllBtn">Convert All</button>
+      <button id="noWatermarkBtn">No Watermark</button>
+    </div>
+
+    <!-- File list container -->
+    <div id="fileList">
+      <div id="progressContainer"></div>
+
+      <div id="controls">
+        <button id="clearAllBtn">Clear All Files</button>
+        <button id="downloadAllBtn">Download All</button>
+      </div>
+    </div>
+
+    <script>
+      const uploadZone = document.getElementById("uploadZone");
+      const fileInput = document.getElementById("fileInput");
+      const progressContainer = document.getElementById("progressContainer");
+      const convertAllBtn = document.getElementById("convertAllBtn");
+      const clearAllBtn = document.getElementById("clearAllBtn");
+      const downloadAllBtn = document.getElementById("downloadAllBtn");
+      const convertTo = document.getElementById("convertTo");
+      const noWatermarkBtn = document.getElementById("noWatermarkBtn");
+      const watermarkText = document.getElementById("watermarkText");
+      const fileList = document.getElementById("fileList");
+
+      let fileItems = [];
+
+      function formatSize(bytes) {
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+      }
+
+      function showFileList() {
+        if (fileItems.length > 0) {
+          fileList.style.display = "block";
+        } else {
+          fileList.style.display = "none";
+        }
+      }
+
+      function addFile(file) {
+        const div = document.createElement("div");
+        div.className = "file-item";
+        div.innerHTML = `
+          <div class="file-info">
+            <strong>${file.name}</strong>
+            <progress max="100" value="0"></progress>
+            <div>Status: Waiting...</div>
+          </div>
+          <select class="watermark-select">
+            <option value="none">None</option>
+            <option value="light" selected>Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <button class="file-btn">Convert</button>
+        `;
+        progressContainer.appendChild(div);
+
+        const item = {
+          file,
+          div,
+          progress: div.querySelector("progress"),
+          info: div.querySelector(".file-info div"),
+          btn: div.querySelector(".file-btn"),
+          watermarkSelect: div.querySelector(".watermark-select"),
+          converted: false,
+        };
+        fileItems.push(item);
+        showFileList();
+
+        item.btn.addEventListener("click", () => convertFile(item));
+      }
+
+      uploadZone.addEventListener("click", () => fileInput.click());
+      uploadZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadZone.classList.add("dragover");
+      });
+      uploadZone.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove("dragover");
+      });
+      uploadZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove("dragover");
+        [...e.dataTransfer.files].forEach(addFile);
+      });
+
+      fileInput.addEventListener("change", () => {
+        [...fileInput.files].forEach(addFile);
+      });
+
+      function convertFile(item) {
+        if (item.converted) return;
+
+        item.btn.textContent = "Waiting...";
+        item.btn.classList.add("waiting-btn");
+        item.btn.disabled = true;
+        item.info.textContent = "Converting...";
+
+        const formData = new FormData();
+        formData.append("images", item.file);
+        const baseName = item.file.name.split(".").slice(0, -1).join(".");
+        formData.append(`watermark_${baseName}`, item.watermarkSelect.value);
+        formData.append("watermarkText", watermarkText.value || "");
+        formData.append("convertTo", convertTo.value);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/convert");
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.success && data.files.length > 0) {
+              const f = data.files[0];
+              const savedPercent = parseFloat(f.savedPercent);
+
+              let percentText = "";
+              if (savedPercent > 0) {
+                percentText = `<span class="size-decrease">(-${savedPercent}%)</span>`;
+              } else if (savedPercent < 0) {
+                percentText = `<span class="size-increase">(+${Math.abs(
+                  savedPercent
+                )}%)</span>`;
+              } else {
+                percentText = "(0%)";
+              }
+
+              item.info.innerHTML = `Converted: ${f.originalSize} → ${f.convertedSize} ${percentText}`;
+
+              item.btn.textContent = "Download";
+              item.btn.classList.remove("waiting-btn");
+              item.btn.classList.add("download-btn");
+              item.btn.disabled = false;
+              item.btn.onclick = () => {
+                const a = document.createElement("a");
+                a.href = `/converted/${f.name}`;
+                a.download = f.name;
+                a.click();
+              };
+              item.converted = true;
+              item.progress.value = 100;
+            }
+          } else item.info.textContent = "Conversion failed!";
+        };
+
+        xhr.onerror = () => {
+          item.info.textContent = "Conversion failed!";
+        };
+
+        xhr.send(formData);
+      }
+
+      convertAllBtn.addEventListener("click", () =>
+        fileItems.forEach(convertFile)
+      );
+
+      noWatermarkBtn.addEventListener("click", () => {
+        fileItems.forEach((item) => (item.watermarkSelect.value = "none"));
+      });
+
+      clearAllBtn.addEventListener("click", () => {
+        progressContainer.innerHTML = "";
+        fileItems = [];
+        showFileList();
+        fetch("/clear-all", { method: "POST" });
+      });
+
+      downloadAllBtn.addEventListener(
+        "click",
+        () => (window.location.href = "/download-all")
+      );
+    </script>
+  </body>
+</html>
