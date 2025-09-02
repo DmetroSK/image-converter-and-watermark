@@ -77,8 +77,8 @@ Server will start at 👉 http://localhost:3000
 
 All notable changes to this project will be documented in this section.
 
-1.0.0 - 2025-09-01 - Initial Commit
-1.1.0 - 2025-09-02 - Global Watermark Swich
+- 1.0.0 - 2025-09-01 - Initial Commit
+- 1.1.0 - 2025-09-02 - Global Watermark Swich
 
 ## Contributing
 
