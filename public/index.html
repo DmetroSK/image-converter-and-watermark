@@ -91,10 +91,6 @@
         border-radius: 5px;
         cursor: pointer;
       }
-      #noWatermarkBtn {
-        background-color: #d3d3d3;
-        color: rgb(0, 0, 0);
-      }
       #clearAllBtn {
         background-color: #f44336;
         color: white;
@@ -138,9 +134,19 @@
           <option value="jpg">JPG</option>
         </select>
       </label>
-      <input type="text" id="watermarkText" placeholder="Watermark text..." />
+
+      <label>
+        Watermark:
+        <select id="globalWatermark">
+          <option value="none">None</option>
+          <option value="light" selected>Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+
+      <input type="text" id="watermarkText" placeholder="Watermark text" />
+
       <button id="convertAllBtn">Convert All</button>
-      <button id="noWatermarkBtn">No Watermark</button>
     </div>
 
     <!-- File list container -->
@@ -161,9 +167,9 @@
       const clearAllBtn = document.getElementById("clearAllBtn");
       const downloadAllBtn = document.getElementById("downloadAllBtn");
       const convertTo = document.getElementById("convertTo");
-      const noWatermarkBtn = document.getElementById("noWatermarkBtn");
       const watermarkText = document.getElementById("watermarkText");
       const fileList = document.getElementById("fileList");
+      const globalWatermark = document.getElementById("globalWatermark");
 
       let fileItems = [];
 
@@ -173,11 +179,7 @@
       }
 
       function showFileList() {
-        if (fileItems.length > 0) {
-          fileList.style.display = "block";
-        } else {
-          fileList.style.display = "none";
-        }
+        fileList.style.display = fileItems.length > 0 ? "block" : "none";
       }
 
       function addFile(file) {
@@ -297,8 +299,10 @@
         fileItems.forEach(convertFile)
       );
 
-      noWatermarkBtn.addEventListener("click", () => {
-        fileItems.forEach((item) => (item.watermarkSelect.value = "none"));
+      globalWatermark.addEventListener("change", () => {
+        fileItems.forEach(
+          (item) => (item.watermarkSelect.value = globalWatermark.value)
+        );
       });
 
       clearAllBtn.addEventListener("click", () => {

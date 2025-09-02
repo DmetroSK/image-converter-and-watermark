@@ -73,6 +73,13 @@ Server will start at 👉 http://localhost:3000
 
 6. Convert and download your images individually or as a ZIP.
 
+## Changelog
+
+All notable changes to this project will be documented in this section.
+
+1.0.0 - 2025-09-01 - Initial Commit
+1.1.0 - 2025-09-02 - Global Watermark Swich
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
